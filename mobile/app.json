@@ -7,21 +7,58 @@
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "backgroundColor": "#0E0E12",
+    "splash": {
+      "backgroundColor": "#0E0E12",
+      "resizeMode": "contain"
+    },
+    "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#0E0E12",
+          "resizeMode": "contain"
+        }
+      ]
+    ],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "app.altingunu",
-      "associatedDomains": ["applinks:altingunu.app"]
+      "buildNumber": "1",
+      "associatedDomains": [
+        "applinks:altingunu.app"
+      ]
     },
     "android": {
       "package": "app.altingunu",
+      "versionCode": 1,
+      "permissions": [
+        "INTERNET"
+      ],
       "intentFilters": [
         {
           "action": "VIEW",
           "autoVerify": true,
-          "data": [{ "scheme": "https", "host": "altingunu.app", "pathPrefix": "/join" }],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "data": [
+            {
+              "scheme": "https",
+              "host": "altingunu.app",
+              "pathPrefix": "/join"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
+    },
+    "extra": {
+      "eas": {
+        "projectId": "a00306c6-1023-4412-9487-fdbdfb26f023"
+      }
     }
   }
 }

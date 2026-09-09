@@ -1,15 +1,14 @@
 import jwt from 'jsonwebtoken';
 import { config } from '../config.js';
-import { db } from '../store/db.js';
+import { getStore } from '../store/index.js';
 
-// JWT doğrulama middleware'i
-export function requireAuth(req, res, next) {
+export async function requireAuth(req, res, next) {
   const header = req.headers.authorization || '';
   const token = header.startsWith('Bearer ') ? header.slice(7) : null;
   if (!token) return res.status(401).json({ error: 'Token gerekli' });
   try {
     const payload = jwt.verify(token, config.jwtSecret);
-    const user = db.users.get(payload.sub);
+    const user = await getStore().getUser(payload.sub);
     if (!user) return res.status(401).json({ error: 'Kullanıcı bulunamadı' });
     req.user = user;
     next();
@@ -19,7 +18,5 @@ export function requireAuth(req, res, next) {
 }
 
 export function signToken(userId) {
-  return jwt.sign({ sub: userId }, config.jwtSecret, {
-    expiresIn: config.jwtExpiresIn,
-  });
+  return jwt.sign({ sub: userId }, config.jwtSecret, { expiresIn: config.jwtExpiresIn });
 }
