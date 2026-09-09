@@ -1,0 +1,27 @@
+{
+  "expo": {
+    "name": "Altın Günü",
+    "slug": "altin-gunu",
+    "scheme": "altingunu",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0E0E12",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "app.altingunu",
+      "associatedDomains": ["applinks:altingunu.app"]
+    },
+    "android": {
+      "package": "app.altingunu",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [{ "scheme": "https", "host": "altingunu.app", "pathPrefix": "/join" }],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
+    }
+  }
+}
