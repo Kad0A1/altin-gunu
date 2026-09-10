@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "52930901-3b58-48a7-b0e6-9a2c9ef05f91"
+      }
+    },
+    "android": {
+      "package": "com.kad0a1.altingunumobile"
+    }
+  }
+}
