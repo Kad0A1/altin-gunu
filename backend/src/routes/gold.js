@@ -6,23 +6,25 @@ const router = Router();
 router.use(requireAuth);
 const gold = getGoldProvider();
 
-// Canlı altın kuru (gram + çeyrek) — gerçek piyasa verisi + günlük değişim
+// Canlı altın kuru (gram + çeyrek) — altingrafigi.com gerçek piyasa verisi
 router.get('/price', async (_req, res) => {
-  try {
-    const gram = await gold.getSpotPrice('gram');
-    const ceyrek = await gold.getSpotPrice('ceyrek');
-    res.json({
-      updatedAt: new Date().toISOString(),
-      source: gram.source,
-      live: gram.source !== 'mock',
-      prices: [
-        { key: 'gram',   label: 'Gram Altın',   buy: gram.buy,   unit: 'TL/gr',   changePercent: gram.changePercent },
-        { key: 'ceyrek', label: 'Çeyrek Altın', buy: ceyrek.buy, unit: 'TL/adet', changePercent: ceyrek.changePercent },
-      ],
-    });
-  } catch (e) {
-    res.status(502).json({ error: 'Fiyat alınamadı', detail: e.message });
+  const all = await gold.getAllPrices();
+  if (!all || !all.gram || !(all.gram.buy > 0)) {
+    return res.status(502).json({ error: 'Canlı fiyata şu an ulaşılamıyor', live: false });
   }
+  const prices = [
+    { key: 'gram', label: 'Gram Altın (Has)', buy: all.gram.buy, bid: all.gram.bid, unit: 'TL/gr' },
+  ];
+  if (all.ceyrek && all.ceyrek.buy > 0) {
+    prices.push({ key: 'ceyrek', label: 'Çeyrek Altın', buy: all.ceyrek.buy, bid: all.ceyrek.bid, unit: 'TL/adet' });
+  }
+  res.json({
+    updatedAt: all.updatedAt || new Date().toISOString(),
+    source: all.gram.source,
+    live: all.gram.source === 'altingrafigi',
+    stale: !!all.stale,
+    prices,
+  });
 });
 
 export default router;

@@ -15,10 +15,10 @@ export default function GoldRateScreen() {
   }, []);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
-  // Canlı his: 20 sn'de bir yenile
   useEffect(() => { const t = setInterval(load, 20000); return () => clearInterval(t); }, [load]);
 
   const isLive = data?.live;
+  const fmt = (n) => Number(n).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   return (
     <View style={styles.wrap}>
@@ -33,7 +33,7 @@ export default function GoldRateScreen() {
       </View>
 
       <Text style={[font.dim, { paddingHorizontal: spacing.lg }]}>
-        {data ? `Son güncelleme: ${new Date(data.updatedAt).toLocaleTimeString('tr-TR')}` : 'Yükleniyor...'}
+        {data?.updatedAt ? `Son güncelleme: ${new Date(data.updatedAt).toLocaleTimeString('tr-TR')}` : (err ? '' : 'Yükleniyor...')}
       </Text>
 
       <ScrollView contentContainerStyle={{ padding: spacing.lg }}
@@ -41,39 +41,30 @@ export default function GoldRateScreen() {
           onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} />}>
         {!data && !err ? (
           <ActivityIndicator color={colors.gold} style={{ marginTop: 40 }} />
-        ) : err ? (
+        ) : err || !data?.prices ? (
           <Text style={[font.dim, { textAlign: 'center', marginTop: 40 }]}>
-            Fiyat alınamadı. Aşağı çekip tekrar deneyin.
+            Canlı fiyata şu an ulaşılamıyor. Aşağı çekip tekrar deneyin.
           </Text>
         ) : (
-          data.prices.map((p) => {
-            const up = (p.changePercent ?? 0) >= 0;
-            return (
-              <View key={p.key} style={styles.rateCard}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.rateLabel}>{p.label}</Text>
-                  <Text style={styles.rateUnit}>{p.unit}</Text>
-                </View>
-                <View style={{ alignItems: 'flex-end' }}>
-                  <Text style={styles.ratePrice}>
-                    {p.buy.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₺
-                  </Text>
-                  {p.changePercent !== undefined && p.changePercent !== null ? (
-                    <Text style={[styles.change, { color: up ? colors.success : colors.danger }]}>
-                      {up ? '▲' : '▼'} %{Math.abs(p.changePercent).toFixed(2)}
-                    </Text>
-                  ) : null}
-                </View>
+          data.prices.map((p) => (
+            <View key={p.key} style={styles.rateCard}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.rateLabel}>{p.label}</Text>
+                <Text style={styles.rateUnit}>{p.unit}</Text>
               </View>
-            );
-          })
+              <View style={{ alignItems: 'flex-end' }}>
+                <Text style={styles.ratePrice}>{fmt(p.buy)} ₺</Text>
+                {p.bid ? <Text style={styles.bid}>Alış: {fmt(p.bid)} ₺</Text> : null}
+              </View>
+            </View>
+          ))
         )}
 
         <View style={styles.note}>
           <Text style={font.dim}>
             {isLive
-              ? `💡 Fiyatlar canlı piyasadan alınmaktadır (kaynak: ${data?.source}). Bilgilendirme amaçlıdır, yatırım tavsiyesi değildir.`
-              : '⚠️ Canlı fiyata şu an ulaşılamıyor; en son bilinen/temsili değer gösteriliyor.'}
+              ? `💡 Fiyatlar canlı piyasadan alınmaktadır (kaynak: altingrafigi). Gösterilen: satış fiyatı. Bilgilendirme amaçlıdır, yatırım tavsiyesi değildir.`
+              : '⚠️ Canlı fiyata şu an ulaşılamıyor.'}
           </Text>
         </View>
       </ScrollView>
@@ -91,6 +82,6 @@ const styles = StyleSheet.create({
   rateLabel: { color: colors.text, fontSize: 18, fontWeight: '700' },
   rateUnit: { color: colors.textDim, fontSize: 12, marginTop: 2 },
   ratePrice: { color: colors.gold, fontSize: 24, fontWeight: '800' },
-  change: { fontSize: 13, fontWeight: '700', marginTop: 4 },
+  bid: { color: colors.textDim, fontSize: 12, marginTop: 4 },
   note: { backgroundColor: colors.surfaceAlt, borderRadius: radius.md, padding: spacing.md, marginTop: spacing.md },
 });
