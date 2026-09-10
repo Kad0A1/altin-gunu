@@ -1,12 +1,82 @@
 {
   "expo": {
-    "extra": {
-      "eas": {
-        "projectId": "52930901-3b58-48a7-b0e6-9a2c9ef05f91"
-      }
+    "name": "Altın Günü",
+    "slug": "altin-gunu",
+    "scheme": "altingunu",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0E0E12",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/icon.png",
+      "backgroundColor": "#0E0E12",
+      "resizeMode": "contain"
+    },
+    "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/icon.png",
+          "backgroundColor": "#0E0E12",
+          "resizeMode": "contain",
+          "imageWidth": 200
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "QR kod okutup gruba katılmak için kamera izni gerekir."
+        }
+      ]
+    ],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "app.altingunu",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSCameraUsageDescription": "QR kod okutup gruba katılmak için kamera izni gerekir."
+      },
+      "associatedDomains": [
+        "applinks:altingunu.app"
+      ]
     },
     "android": {
-      "package": "com.kad0a1.altingunumobile"
+      "package": "app.altingunu",
+      "versionCode": 3,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#0E0E12"
+      },
+      "permissions": [
+        "INTERNET",
+        "CAMERA"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "altingunu.app",
+              "pathPrefix": "/join"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ]
+    },
+    "extra": {
+      "eas": {
+        "projectId": "a00306c6-1023-4412-9487-fdbdfb26f023"
+      }
     }
   }
 }

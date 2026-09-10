@@ -29,8 +29,15 @@ export default function LoginScreen({ navigation }) {
           Arkadaşlarınla dijital altın günü kur, otomatik öde, sıran gelince altınını kapına aldır.
         </Text>
       </View>
+
       <Field label="Ad Soyad" placeholder="Adınız" value={name} onChangeText={setName} />
-      <Field label="Telefon" placeholder="05XX XXX XX XX" keyboardType="phone-pad" value={phone} onChangeText={setPhone} />
+      <Field
+        label="Telefon"
+        placeholder="05XX XXX XX XX"
+        keyboardType="phone-pad"
+        value={phone}
+        onChangeText={setPhone}
+      />
       {error ? <Text style={styles.err}>{error}</Text> : null}
       <Button title="Devam Et" onPress={onContinue} loading={loading} />
       <Text style={[font.dim, { textAlign: 'center', marginTop: spacing.md }]}>

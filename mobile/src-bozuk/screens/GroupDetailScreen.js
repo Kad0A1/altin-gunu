@@ -23,22 +23,30 @@ export default function GroupDetailScreen({ route }) {
   const inviteLink = `${APP_URL}/join/${group.inviteCode}`;
 
   async function shareLink() {
-    await Share.share({ message: `"${group.name}" altın günü grubuma katıl! 🪙\nDavet kodu: ${group.inviteCode}\n${inviteLink}` });
+    await Share.share({
+      message: `"${group.name}" altın günü grubuma katıl! 🪙\nDavet kodu: ${group.inviteCode}\n${inviteLink}`,
+    });
   }
+
   async function draw() {
     setBusy(true);
     try { await api.drawOrder(id); await load(); Alert.alert('Kura çekildi', 'Sıra adil biçimde belirlendi.'); }
-    catch (e) { Alert.alert('Hata', e.message); } finally { setBusy(false); }
+    catch (e) { Alert.alert('Hata', e.message); }
+    finally { setBusy(false); }
   }
+
   async function pay(roundId) {
     setBusy(true);
     try {
-      await api.addCard().catch(() => {});
+      await api.addCard().catch(() => {}); // demo: kart yoksa ekle
       const res = await api.payRound(roundId);
       await load();
-      if (res.roundComplete) Alert.alert('🎉 Altın yolda!', `${res.gold.grams} gr altın alındı ve sıradaki üyeye kargolandı.\nTakip: ${res.gold.order.trackingNo}`);
-      else Alert.alert('Ödeme alındı', 'Diğer üyeler ödeyince altın gönderilecek.');
-    } catch (e) { Alert.alert('Hata', e.message); } finally { setBusy(false); }
+      if (res.roundComplete)
+        Alert.alert('🎉 Altın yolda!', `${res.gold.grams} gr altın alındı ve sıradaki üyeye kargolandı.\nTakip: ${res.gold.order.trackingNo}`);
+      else
+        Alert.alert('Ödeme alındı', 'Diğer üyeler ödeyince altın gönderilecek.');
+    } catch (e) { Alert.alert('Hata', e.message); }
+    finally { setBusy(false); }
   }
 
   return (
@@ -49,14 +57,18 @@ export default function GroupDetailScreen({ route }) {
       </View>
       <Text style={font.dim}>{group.memberCount} kişilik • {group.amount} {group.unit}/ay</Text>
 
+      {/* Davet kartı */}
       <Card style={{ marginTop: spacing.lg, alignItems: 'center' }}>
         <Text style={font.h2}>Arkadaşlarını davet et</Text>
-        <View style={styles.qrBox}><QRCode value={inviteLink} size={140} backgroundColor="white" /></View>
+        <View style={styles.qrBox}>
+          <QRCode value={inviteLink} size={140} backgroundColor="white" />
+        </View>
         <Text style={[font.dim, { marginTop: spacing.sm }]}>Davet Kodu</Text>
         <Text style={styles.code}>{group.inviteCode}</Text>
         <Button title="Linki Paylaş" onPress={shareLink} style={{ alignSelf: 'stretch', marginTop: spacing.md }} />
       </Card>
 
+      {/* Üyeler */}
       <Text style={[font.h2, { marginTop: spacing.md }]}>Üyeler ({members.length}/{group.memberCount})</Text>
       {members.sort((a, b) => (a.slotNo || 99) - (b.slotNo || 99)).map((m) => (
         <View key={m.id} style={styles.memberRow}>
@@ -66,10 +78,13 @@ export default function GroupDetailScreen({ route }) {
         </View>
       ))}
 
+      {/* Kura */}
       {group.status === 'forming' && (
-        <Button title="Kura Çek & Sırayı Belirle" onPress={draw} loading={busy} style={{ marginTop: spacing.md }} />
+        <Button title="Kura Çek & Sırayı Belirle" onPress={draw} loading={busy}
+          style={{ marginTop: spacing.md }} />
       )}
 
+      {/* Turlar */}
       {rounds.length > 0 && (
         <>
           <Text style={[font.h2, { marginTop: spacing.lg }]}>Takvim</Text>
@@ -82,8 +97,12 @@ export default function GroupDetailScreen({ route }) {
                   <Text style={font.body}>Tur {r.roundNo} • {b?.user.name}</Text>
                   <Pill text={done ? 'Gönderildi' : 'Bekliyor'} tone={done ? 'success' : 'default'} />
                 </View>
-                <Text style={[font.dim, { marginVertical: 6 }]}>{new Date(r.dueDate).toLocaleDateString('tr-TR')}</Text>
-                {!done && (<Button title={`Öde (${group.amount} ${group.unit})`} onPress={() => pay(r.id)} loading={busy} variant="ghost" />)}
+                <Text style={[font.dim, { marginVertical: 6 }]}>
+                  {new Date(r.dueDate).toLocaleDateString('tr-TR')}
+                </Text>
+                {!done && (
+                  <Button title={`Öde (${group.amount} ${group.unit})`} onPress={() => pay(r.id)} loading={busy} variant="ghost" />
+                )}
               </Card>
             );
           })}
@@ -98,6 +117,9 @@ const styles = StyleSheet.create({
   head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   qrBox: { backgroundColor: 'white', padding: 12, borderRadius: radius.md, marginTop: spacing.md },
   code: { fontSize: 28, fontWeight: '800', color: colors.gold, letterSpacing: 4 },
-  memberRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.border },
+  memberRow: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.md,
+    paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.border,
+  },
   slot: { color: colors.gold, fontWeight: '800', width: 36 },
 });

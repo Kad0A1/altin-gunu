@@ -5,6 +5,7 @@ import { Button, Field, Card } from '../components/UI';
 import { colors, spacing, font } from '../theme/theme';
 
 export default function JoinGroupScreen({ route, navigation }) {
+  // Deep link ile gelen kod: route.params.code
   const [code, setCode] = useState(route.params?.code || '');
   const [preview, setPreview] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -32,9 +33,13 @@ export default function JoinGroupScreen({ route, navigation }) {
     <View style={styles.wrap}>
       <Text style={font.h2}>Gruba Katıl</Text>
       <Text style={[font.dim, { marginVertical: spacing.sm }]}>Arkadaşının paylaştığı 6 haneli davet kodunu gir.</Text>
-      <Field placeholder="GX7K2Q" autoCapitalize="characters" maxLength={6} value={code} onChangeText={setCode} />
+
+      <Field placeholder="GX7K2Q" autoCapitalize="characters" maxLength={6}
+        value={code} onChangeText={setCode} />
       <Button title="Grubu Getir" variant="ghost" onPress={() => doPreview(code)} />
+
       {error ? <Text style={styles.err}>{error}</Text> : null}
+
       {preview && (
         <Card style={{ marginTop: spacing.lg }}>
           <Text style={font.h2}>{preview.name}</Text>
