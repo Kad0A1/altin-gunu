@@ -6,12 +6,16 @@ import { fileURLToPath } from 'node:url';
 const { Pool } = pg;
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+// DATABASE_URL varsa PostgreSQL bağlantısı kurulur.
+// Render'ın PostgreSQL'i SSL ister; local için ssl kapalı.
 export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.DATABASE_URL && process.env.DATABASE_URL.includes('localhost')
-    ? false : { rejectUnauthorized: false },
+    ? false
+    : { rejectUnauthorized: false },
 });
 
+// Şemayı çalıştır (tablolar yoksa oluşturur)
 export async function initSchema() {
   const sql = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
   await pool.query(sql);

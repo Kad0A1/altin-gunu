@@ -1,4 +1,4 @@
-# Render Blueprint — backend + ücretsiz PostgreSQL
+# Render Blueprint — backend + ücretsiz PostgreSQL birlikte
 databases:
   - name: altin-gunu-db
     plan: free

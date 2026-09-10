@@ -11,7 +11,7 @@ router.post('/request-otp', async (req, res) => {
   const code = String(Math.floor(100000 + Math.random() * 900000));
   await getStore().setOtp(phone, code, Date.now() + 3 * 60 * 1000);
   console.log(`[OTP] ${phone} -> ${code}`);
-  res.json({ ok: true, devHint: code });
+  res.json({ ok: true, devHint: code }); // DEMO: üretimde SMS ile gönderin
 });
 
 router.post('/verify-otp', async (req, res) => {
@@ -22,9 +22,11 @@ router.post('/verify-otp', async (req, res) => {
     return res.status(400).json({ error: 'Kod hatalı veya süresi doldu' });
   }
   await store.deleteOtp(phone);
+
   let user = await store.findUserByPhone(phone);
   if (!user) {
-    user = { id: nanoid(10), phone, name: name || 'Üye', tcVerified: false, iban: null, createdAt: new Date().toISOString() };
+    user = { id: nanoid(10), phone, name: name || 'Üye', tcVerified: false, iban: null,
+      createdAt: new Date().toISOString() };
     await store.createUser(user);
     await store.appendAudit('user', 'register', user.id, { phone });
   }

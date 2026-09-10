@@ -1,7 +1,7 @@
 {
   "name": "altin-gunu-backend",
-  "version": "1.2.0",
-  "description": "Altın Günü - Model B orkestrasyon backend (PostgreSQL + bakiye/altın kuru/profil)",
+  "version": "1.1.0",
+  "description": "Altın Günü - Model B orkestrasyon backend (PostgreSQL destekli)",
   "type": "module",
   "main": "src/server.js",
   "scripts": {

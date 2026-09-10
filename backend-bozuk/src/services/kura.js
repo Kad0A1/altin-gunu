@@ -1,6 +1,9 @@
 import crypto from 'node:crypto';
 
-export function hashNonce(nonce) { return crypto.createHash('sha256').update(String(nonce)).digest('hex'); }
+// Kanıtlanabilir adil kura: commit-reveal + Fisher-Yates.
+export function hashNonce(nonce) {
+  return crypto.createHash('sha256').update(String(nonce)).digest('hex');
+}
 export function buildSeed(groupId, revealedNonces) {
   const material = groupId + '|' + [...revealedNonces].sort().join('|');
   return crypto.createHash('sha256').update(material).digest('hex');
@@ -15,8 +18,12 @@ function seededRng(seedHex) {
   };
 }
 export function drawOrder(memberIds, seedHex) {
-  const rng = seededRng(seedHex); const arr = [...memberIds];
-  for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; }
+  const rng = seededRng(seedHex);
+  const arr = [...memberIds];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
   return arr;
 }
 export function verifyDraw(groupId, revealedNonces, memberIds, expectedOrder) {
