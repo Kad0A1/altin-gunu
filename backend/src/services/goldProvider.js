@@ -1,100 +1,70 @@
 import { nanoid } from 'nanoid';
 
-// ── DİJİTAL ALTIN PLATFORMU ADAPTÖRÜ ────────────────────────────────────
-// Fiyatlar CANLI kaynaklardan çekilir (yedekli). Altın alımı + fiziki
-// teslimat kısmı Model B'de lisanslı platforma (ARDGold/Minted) gidecek;
-// şimdilik mock. Fiyat gösterimi ise GERÇEK piyasadan gelir.
-//
-// Kaynak sırası (biri çökerse diğerine düşer, ikisi de çökerse mock):
-//   1) turkpidya.com   (Harem Altın verisi, anahtarsız)
-//   2) gramaltinkactl.com (anahtarsız, değişim %)
-//   3) statik mock (son çare — uygulama asla kırılmaz)
+// ── CANLI ALTIN FİYATI (altingrafigi.com) ───────────────────────────────
+// Doğrulanmış format (2026):
+// { data: [ { symbol:'ALTIN', name:'Has Altın', category:'GRAM ALTIN',
+//             bid:6771.74, ask:6800.24, timestamp:'...' }, ... ] }
+//  bid = alış, ask = satış.
 
-const CACHE_MS = 60 * 1000; // 60 sn önbellek (rate-limit dostu)
+const ALL_URL = 'https://altingrafigi.com/api/v1/prices';
+const CACHE_MS = 60 * 1000;
 let cache = { at: 0, data: null };
 
-const MOCK = {
-  gram:   { buy: 4850, changePercent: 0, source: 'mock' },
-  ceyrek: { buy: 7920, changePercent: 0, source: 'mock' },
-};
-
-async function fetchJson(url, ms = 7000) {
+async function fetchJson(url, ms = 8000) {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), ms);
   try {
-    const res = await fetch(url, { signal: ctrl.signal, headers: { 'Accept': 'application/json' } });
+    const res = await fetch(url, { signal: ctrl.signal, headers: { Accept: 'application/json' } });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     return await res.json();
   } finally { clearTimeout(t); }
 }
 
-// --- Kaynak 1: turkpidya (gram + çeyrek) ---
-async function fromTurkpidya() {
-  const base = 'https://turkpidya.com/wp-json/turkpidya-data/v1/gold';
-  const [gramJson, coinJson] = await Promise.all([
-    fetchJson(base + '?category=gram'),
-    fetchJson(base + '?category=coin').catch(() => null),
-  ]);
-
-  const gramArr = gramJson?.prices || [];
-  const g = gramArr.find((p) => /24|gram/i.test(p.type || p.name_tr || '')) || gramArr[0];
-  if (!g) throw new Error('turkpidya gram yok');
-
-  let ceyrek = null;
-  const coinArr = coinJson?.prices || [];
-  const c = coinArr.find((p) => /ceyrek|çeyrek/i.test(p.type || p.name_tr || ''));
-  if (c) ceyrek = { buy: Number(c.sell ?? c.buy), changePercent: Number(c.change_percent ?? 0), source: 'turkpidya' };
-
-  return {
-    gram:   { buy: Number(g.sell ?? g.buy), changePercent: Number(g.change_percent ?? 0), source: 'turkpidya' },
-    ceyrek: ceyrek || { buy: Number(g.sell ?? g.buy) * 1.63, changePercent: Number(g.change_percent ?? 0), source: 'turkpidya~' },
-  };
-}
-
-// --- Kaynak 2: gramaltinkactl ---
-async function fromGramAltinKacTl() {
-  const json = await fetchJson('https://gramaltinkactl.com/api/v1/prices?category=gold');
-  const arr = json?.data?.gold || [];
-  const g = arr.find((x) => /gram-altin|gram alt/i.test(x.slug || x.name || ''));
-  const c = arr.find((x) => /ceyrek|çeyrek/i.test(x.slug || x.name || ''));
-  if (!g) throw new Error('gramaltinkactl gram yok');
-  return {
-    gram:   { buy: Number(g.sellPrice ?? g.buyPrice), changePercent: Number(g.change ?? 0), source: 'gramaltinkactl' },
-    ceyrek: c ? { buy: Number(c.sellPrice ?? c.buyPrice), changePercent: Number(c.change ?? 0), source: 'gramaltinkactl' }
-              : { buy: Number(g.sellPrice ?? g.buyPrice) * 1.63, changePercent: Number(g.change ?? 0), source: 'gramaltinkactl~' },
-  };
+function norm(item, sourceLabel) {
+  const buy = Number(item.ask ?? item.bid);
+  const bid = Number(item.bid ?? item.ask);
+  return { buy, bid, source: sourceLabel, name: item.name, category: item.category };
 }
 
 async function loadPrices() {
-  // Önbellek taze mi?
   if (cache.data && Date.now() - cache.at < CACHE_MS) return cache.data;
+  try {
+    const json = await fetchJson(ALL_URL);
+    const arr = Array.isArray(json?.data) ? json.data : [];
+    if (!arr.length) throw new Error('boş veri');
 
-  // Sırayla dene
-  for (const src of [fromTurkpidya, fromGramAltinKacTl]) {
-    try {
-      const data = await src();
-      if (data?.gram?.buy > 0) { cache = { at: Date.now(), data }; return data; }
-    } catch (e) {
-      console.warn('[gold] kaynak başarısız:', src.name, e.message);
-    }
+    const gramItem = arr.find((x) => x.symbol === 'ALTIN')
+      || arr.find((x) => /GRAM ALTIN/i.test(x.category || ''))
+      || arr.find((x) => /gram/i.test(x.name || ''));
+    const ceyrekItem = arr.find((x) => /CEYREK[_ ]?YENI/i.test(x.symbol || ''))
+      || arr.find((x) => /çeyrek|ceyrek/i.test((x.category || '') + (x.name || '')));
+
+    if (!gramItem) throw new Error('gram bulunamadı');
+
+    const data = {
+      gram: norm(gramItem, 'altingrafigi'),
+      ceyrek: ceyrekItem ? norm(ceyrekItem, 'altingrafigi') : null,
+      updatedAt: json.updatedAt || new Date().toISOString(),
+      stale: !!json.stale,
+    };
+    cache = { at: Date.now(), data };
+    return data;
+  } catch (e) {
+    console.warn('[gold] canlı fiyat alınamadı:', e.message);
+    if (cache.data) return cache.data;
+    return null;
   }
-  // Son çare: mock (ama eski önbellek varsa onu tercih et)
-  if (cache.data) return cache.data;
-  return MOCK;
 }
 
 class GoldProvider {
-  // Canlı spot fiyat (unit: 'gram' | 'ceyrek')
   async getSpotPrice(unit = 'gram') {
     const prices = await loadPrices();
-    const p = prices[unit] || prices.gram;
-    return { unit, buy: p.buy, changePercent: p.changePercent ?? 0, source: p.source || 'live', ts: new Date().toISOString() };
+    if (!prices) return { unit, buy: null, source: 'unavailable', ts: new Date().toISOString() };
+    const p = unit === 'ceyrek' ? (prices.ceyrek || prices.gram) : prices.gram;
+    return { unit, buy: p.buy, bid: p.bid, source: p.source, name: p.name,
+      updatedAt: prices.updatedAt, ts: new Date().toISOString() };
   }
-
-  // Tüm fiyatları döndür (ekran için)
   async getAllPrices() { return await loadPrices(); }
-
-  // --- Alım + fiziki teslimat (Model B'de lisanslı platform; şimdilik mock) ---
   async buyGold({ grams, lockedPrice, idempotencyKey }) {
     return { status: 'purchased', orderRef: 'gold_' + nanoid(12), grams, lockedPrice, idempotencyKey };
   }
