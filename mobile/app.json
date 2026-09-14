@@ -8,11 +8,6 @@
     "userInterfaceStyle": "dark",
     "backgroundColor": "#0E0E12",
     "icon": "./assets/icon.png",
-    "splash": {
-      "image": "./assets/icon.png",
-      "backgroundColor": "#0E0E12",
-      "resizeMode": "contain"
-    },
     "plugins": [
       [
         "expo-splash-screen",
