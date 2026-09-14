@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Altın Günü — Admin Paneli</title>
+<style>
+  :root{
+    --bg:#0E0E12; --surface:#1A1A22; --surface2:#242430; --gold:#E6B84F;
+    --text:#fff; --dim:#9A9AA8; --border:#2E2E3A; --success:#3DD68C; --danger:#FF6B6B;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:-apple-system,Segoe UI,Roboto,sans-serif;padding:20px}
+  h1{font-size:22px;margin-bottom:4px}
+  .sub{color:var(--dim);font-size:13px;margin-bottom:20px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:16px}
+  input,button{font-size:15px;border-radius:10px;border:1px solid var(--border)}
+  input{background:var(--surface2);color:var(--text);padding:10px 12px;width:100%}
+  button{background:var(--gold);color:#1A1A22;font-weight:700;padding:10px 16px;border:none;cursor:pointer}
+  button.ghost{background:transparent;color:var(--gold);border:1.5px solid var(--gold)}
+  button.danger{background:var(--danger);color:#fff}
+  button.sm{padding:6px 10px;font-size:13px;border-radius:8px}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+  .stat{background:var(--surface);border:1px solid var(--gold);border-radius:14px;padding:14px;text-align:center}
+  .stat .n{font-size:26px;font-weight:800;color:var(--gold)}
+  .stat .l{font-size:12px;color:var(--dim);margin-top:4px}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{text-align:left;padding:10px;border-bottom:1px solid var(--border)}
+  th{color:var(--dim);font-weight:600;font-size:12px;text-transform:uppercase}
+  .pill{display:inline-block;padding:3px 8px;border-radius:99px;font-size:11px;font-weight:700;border:1px solid}
+  .tab{display:flex;gap:8px;margin-bottom:16px}
+  .tab button{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+  .tab button.active{background:var(--gold);color:#1A1A22}
+  .hidden{display:none}
+  .err{color:var(--danger);margin-top:8px}
+  .logo{font-size:32px}
+  a{color:var(--gold)}
+  .muted{color:var(--dim);font-size:12px}
+</style>
+</head>
+<body>
+
+<!-- GİRİŞ -->
+<div id="login" class="card" style="max-width:420px;margin:60px auto">
+  <div style="text-align:center;margin-bottom:16px">
+    <div class="logo">🪙</div>
+    <h1>Admin Paneli</h1>
+    <div class="sub">Yönetici anahtarınızı girin</div>
+  </div>
+  <input id="key" type="password" placeholder="Admin anahtarı (RESET_KEY)" />
+  <div class="err" id="loginErr"></div>
+  <button style="width:100%;margin-top:12px" onclick="login()">Giriş Yap</button>
+  <div class="muted" style="margin-top:12px;text-align:center">Bu anahtar Render → Environment → RESET_KEY değeridir.</div>
+</div>
+
+<!-- PANEL -->
+<div id="panel" class="hidden">
+  <div class="row" style="justify-content:space-between">
+    <div>
+      <h1>🪙 Altın Günü — Admin</h1>
+      <div class="sub">Kullanıcı ve grup yönetimi</div>
+    </div>
+    <div class="row">
+      <button class="ghost sm" onclick="loadAll()">↻ Yenile</button>
+      <button class="ghost sm" onclick="logout()">Çıkış</button>
+    </div>
+  </div>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="tab">
+    <button id="tabUsers" class="active" onclick="showTab('users')">👥 Kullanıcılar</button>
+    <button id="tabGroups" onclick="showTab('groups')">📦 Gruplar</button>
+    <button id="tabDanger" onclick="showTab('danger')">⚠️ Tehlikeli</button>
+  </div>
+
+  <!-- Kullanıcılar -->
+  <div id="viewUsers" class="card">
+    <table>
+      <thead><tr><th>Ad</th><th>Kullanıcı Adı</th><th>Telefon</th><th>Grup</th><th>Kayıt</th><th>İşlem</th></tr></thead>
+      <tbody id="usersBody"></tbody>
+    </table>
+    <div id="usersEmpty" class="muted" style="padding:16px;text-align:center">Yükleniyor...</div>
+  </div>
+
+  <!-- Gruplar -->
+  <div id="viewGroups" class="card hidden">
+    <table>
+      <thead><tr><th>Grup</th><th>Kod</th><th>Sahip</th><th>Üye</th><th>Tutar</th><th>Durum</th></tr></thead>
+      <tbody id="groupsBody"></tbody>
+    </table>
+    <div id="groupsEmpty" class="muted" style="padding:16px;text-align:center">Yükleniyor...</div>
+  </div>
+
+  <!-- Tehlikeli -->
+  <div id="viewDanger" class="card hidden">
+    <h1 style="font-size:16px;color:var(--danger)">⚠️ Tehlikeli Bölge</h1>
+    <p class="muted" style="margin:8px 0 16px">Tüm kullanıcı ve grup verilerini kalıcı olarak siler. Geri alınamaz!</p>
+    <button class="danger" onclick="resetAll()">Tüm Veriyi Sıfırla</button>
+  </div>
+</div>
+
+<script>
+let KEY = '';
+const $ = (id) => document.getElementById(id);
+
+async function apiGet(path){
+  const r = await fetch(`/api/admin/${path}${path.includes('?')?'&':'?'}key=${encodeURIComponent(KEY)}`);
+  const d = await r.json(); if(!r.ok) throw new Error(d.error||'Hata'); return d;
+}
+async function apiPost(path, body){
+  const r = await fetch(`/api/admin/${path}?key=${encodeURIComponent(KEY)}`,{
+    method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)
+  });
+  const d = await r.json(); if(!r.ok) throw new Error(d.error||'Hata'); return d;
+}
+
+async function login(){
+  KEY = $('key').value.trim();
+  $('loginErr').textContent = '';
+  try{
+    await apiGet('stats');           // anahtar doğru mu test et
+    localStorage.setItem('adminKey', KEY);
+    $('login').classList.add('hidden');
+    $('panel').classList.remove('hidden');
+    loadAll();
+  }catch(e){ $('loginErr').textContent = e.message; }
+}
+function logout(){ localStorage.removeItem('adminKey'); location.reload(); }
+
+function showTab(t){
+  ['Users','Groups','Danger'].forEach(x=>{
+    $('view'+x).classList.toggle('hidden', x.toLowerCase()!==t);
+    $('tab'+x).classList.toggle('active', x.toLowerCase()===t);
+  });
+}
+
+async function loadAll(){ await Promise.all([loadStats(), loadUsers(), loadGroups()]); }
+
+async function loadStats(){
+  try{
+    const s = await apiGet('stats');
+    $('stats').innerHTML = `
+      <div class="stat"><div class="n">${s.users}</div><div class="l">Kullanıcı</div></div>
+      <div class="stat"><div class="n">${s.groups}</div><div class="l">Grup</div></div>
+      <div class="stat"><div class="n">${Number(s.totalGoldGram).toFixed(2)}</div><div class="l">Toplam Altın (gr)</div></div>
+      <div class="stat"><div class="n">${Number(s.totalPaid).toLocaleString('tr-TR')}</div><div class="l">Toplam Ödenen</div></div>`;
+  }catch(e){ $('stats').innerHTML = `<div class="err">${e.message}</div>`; }
+}
+
+async function loadUsers(){
+  try{
+    const d = await apiGet('users');
+    $('usersEmpty').style.display = d.count ? 'none' : 'block';
+    $('usersEmpty').textContent = d.count ? '' : 'Henüz kullanıcı yok.';
+    $('usersBody').innerHTML = d.users.map(u=>`
+      <tr>
+        <td>${esc(u.name)}</td>
+        <td><span class="pill" style="color:var(--gold);border-color:var(--gold)">${esc(u.username||'—')}</span></td>
+        <td>${esc(u.phone)}</td>
+        <td>${u.group_count}</td>
+        <td class="muted">${new Date(u.created_at).toLocaleDateString('tr-TR')}</td>
+        <td class="row">
+          <button class="ghost sm" onclick="editUser('${esc(u.phone)}','${esc(u.name)}','${esc(u.username||'')}')">Düzenle</button>
+          <button class="danger sm" onclick="delUser('${esc(u.phone)}','${esc(u.name)}')">Sil</button>
+        </td>
+      </tr>`).join('');
+  }catch(e){ $('usersEmpty').style.display='block'; $('usersEmpty').textContent=e.message; }
+}
+
+async function loadGroups(){
+  try{
+    const d = await apiGet('groups');
+    $('groupsEmpty').style.display = d.count ? 'none' : 'block';
+    $('groupsEmpty').textContent = d.count ? '' : 'Henüz grup yok.';
+    $('groupsBody').innerHTML = d.groups.map(g=>`
+      <tr>
+        <td>${esc(g.name)}</td>
+        <td><span class="pill" style="color:var(--gold);border-color:var(--gold)">${esc(g.invite_code)}</span></td>
+        <td>${esc(g.owner_name||'—')}</td>
+        <td>${g.current_members}/${g.member_count}</td>
+        <td>${g.amount} ${esc(g.unit)}</td>
+        <td>${esc(g.status)}</td>
+      </tr>`).join('');
+  }catch(e){ $('groupsEmpty').style.display='block'; $('groupsEmpty').textContent=e.message; }
+}
+
+async function editUser(phone, oldName, oldUser){
+  const name = prompt('Ad Soyad:', oldName); if(name===null) return;
+  const username = prompt('Kullanıcı adı (3-20, harf/rakam/_):', oldUser); if(username===null) return;
+  try{
+    await apiPost('users/update', { phone, name: name.trim(), username: username.trim() });
+    await loadUsers();
+    alert('Güncellendi ✓');
+  }catch(e){ alert('Hata: '+e.message); }
+}
+
+async function delUser(phone, name){
+  if(!confirm(`${name} (${phone}) silinsin mi? Bu geri alınamaz.`)) return;
+  try{ await apiPost('users/delete', { phone }); await loadAll(); }
+  catch(e){ alert('Hata: '+e.message); }
+}
+
+async function resetAll(){
+  if(!confirm('TÜM veriler silinecek! Emin misin?')) return;
+  if(!confirm('Son uyarı: Bu işlem GERİ ALINAMAZ. Devam?')) return;
+  try{ await apiPost('reset', {}); await loadAll(); alert('Tüm veriler sıfırlandı.'); }
+  catch(e){ alert('Hata: '+e.message); }
+}
+
+function esc(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// Otomatik giriş (kayıtlı anahtar varsa)
+window.onload = () => {
+  const saved = localStorage.getItem('adminKey');
+  if(saved){ $('key').value = saved; login(); }
+};
+</script>
+</body>
+</html>

@@ -1,5 +1,7 @@
 import express from 'express';
 import cors from 'cors';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { config } from './config.js';
 import { initStore, getStore } from './store/index.js';
 import authRoutes from './routes/auth.js';
@@ -10,9 +12,14 @@ import goldRoutes from './routes/gold.js';
 import adminRoutes from './routes/admin.js';
 import { requireAuth } from './middleware/auth.js';
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// Admin panelinin statik dosyaları (public/admin.html)
+app.use('/admin-static', express.static(path.join(__dirname, '..', 'public')));
 
 app.get('/health', (_req, res) => res.json({ status: 'ok', store: getStore().kind, ts: new Date().toISOString() }));
 
