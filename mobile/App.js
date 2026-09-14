@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -7,7 +7,7 @@ import { StatusBar } from 'expo-status-bar';
 import * as Linking from 'expo-linking';
 
 import { colors } from './src/theme/theme';
-import { loadToken } from './src/api/client';
+import { loadToken, setToken, api } from './src/api/client';
 
 import LoginScreen from './src/screens/LoginScreen';
 import RegisterScreen from './src/screens/RegisterScreen';
@@ -67,19 +67,45 @@ function MainTabs() {
   );
 }
 
+// Basit yükleme ekranı
+function Splash() {
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.bg, justifyContent: 'center', alignItems: 'center' }}>
+      <Text style={{ fontSize: 56, marginBottom: 16 }}>🪙</Text>
+      <ActivityIndicator color={colors.gold} />
+    </View>
+  );
+}
+
 export default function App() {
   const [ready, setReady] = useState(false);
-  const [initialToken, setInitialToken] = useState(null);
+  const [signedIn, setSignedIn] = useState(false);
 
-  useEffect(() => { loadToken().then((t) => { setInitialToken(t); setReady(true); }); }, []);
-  if (!ready) return null;
+  useEffect(() => {
+    (async () => {
+      const t = await loadToken();
+      if (!t) { setSignedIn(false); setReady(true); return; }
+      // Token VAR — ama gerçekten geçerli mi? Backend'e sorup doğrula.
+      try {
+        await api.me();          // 200 dönerse token geçerli
+        setSignedIn(true);
+      } catch (e) {
+        // 401 / geçersiz / kullanıcı silinmiş → token'ı temizle, girişe yönlendir
+        await setToken(null);
+        setSignedIn(false);
+      }
+      setReady(true);
+    })();
+  }, []);
+
+  if (!ready) return <Splash />;
 
   return (
     <>
       <StatusBar style="light" />
       <NavigationContainer theme={navTheme} linking={linking}>
         <Stack.Navigator
-          initialRouteName={initialToken ? 'Main' : 'Login'}
+          initialRouteName={signedIn ? 'Main' : 'Login'}
           screenOptions={{
             headerStyle: { backgroundColor: colors.bg },
             headerTintColor: colors.gold,
