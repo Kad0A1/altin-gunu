@@ -5,7 +5,7 @@ import { Button, Field } from '../components/UI';
 import { colors, spacing, font } from '../theme/theme';
 
 export default function OtpScreen({ route, navigation }) {
-  const { phone, name, devHint } = route.params;
+  const { mode, name, username, phone, devHint } = route.params;
   const [code, setCode] = useState(devHint || '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -13,7 +13,12 @@ export default function OtpScreen({ route, navigation }) {
   async function onVerify() {
     setLoading(true); setError('');
     try {
-      const res = await api.verifyOtp(phone, code.trim(), name);
+      let res;
+      if (mode === 'register') {
+        res = await api.registerVerify(name, username, phone, code.trim());
+      } else {
+        res = await api.loginVerify(phone, code.trim());
+      }
       await setToken(res.token);
       navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
     } catch (e) { setError(e.message); }
@@ -22,7 +27,7 @@ export default function OtpScreen({ route, navigation }) {
 
   return (
     <View style={styles.wrap}>
-      <Text style={font.h2}>Doğrulama Kodu</Text>
+      <Text style={font.h2}>{mode === 'register' ? 'Kaydı Doğrula' : 'Girişi Doğrula'}</Text>
       <Text style={[font.dim, { marginVertical: spacing.sm }]}>
         {phone} numarasına gönderilen 6 haneli kodu girin.
       </Text>
@@ -31,7 +36,7 @@ export default function OtpScreen({ route, navigation }) {
       ) : null}
       <Field placeholder="______" keyboardType="number-pad" maxLength={6} value={code} onChangeText={setCode} />
       {error ? <Text style={styles.err}>{error}</Text> : null}
-      <Button title="Doğrula ve Giriş Yap" onPress={onVerify} loading={loading} />
+      <Button title={mode === 'register' ? 'Kaydı Tamamla' : 'Giriş Yap'} onPress={onVerify} loading={loading} />
     </View>
   );
 }

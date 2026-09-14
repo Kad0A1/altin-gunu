@@ -9,9 +9,11 @@ const gold = getGoldProvider();
 
 router.get('/me', async (req, res) => {
   const u = req.user;
-  res.json({ user: { id: u.id, name: u.name, phone: u.phone, iban: u.iban || null, address: u.address || null, tcVerified: !!u.tcVerified } });
+  res.json({ user: { id: u.id, name: u.name, username: u.username || null, phone: u.phone,
+    iban: u.iban || null, address: u.address || null, tcVerified: !!u.tcVerified } });
 });
 
+// Profil güncelle — kullanıcı adı ve telefon DEĞİŞTİRİLEMEZ (benzersiz kimlik)
 router.patch('/me', async (req, res) => {
   const store = getStore();
   const { name, iban, address } = req.body;
@@ -21,7 +23,8 @@ router.patch('/me', async (req, res) => {
   if (address !== undefined) fields.address = address;
   const updated = await store.updateUser(req.user.id, fields);
   await store.appendAudit('user', 'update_profile', req.user.id, Object.keys(fields));
-  res.json({ ok: true, user: { id: updated.id, name: updated.name, phone: updated.phone, iban: updated.iban || null, address: updated.address || null } });
+  res.json({ ok: true, user: { id: updated.id, name: updated.name, username: updated.username || null,
+    phone: updated.phone, iban: updated.iban || null, address: updated.address || null } });
 });
 
 router.get('/me/summary', async (req, res) => {
@@ -34,7 +37,7 @@ router.get('/me/summary', async (req, res) => {
   const groups = await store.listUserGroups(uid);
   const activeGroups = groups.filter((g) => g.status !== 'completed').length;
   const price = await gold.getSpotPrice('gram');
-  const goldValueTry = +(goldGram * price.buy).toFixed(2);
+  const goldValueTry = price.buy ? +(goldGram * price.buy).toFixed(2) : 0;
   res.json({ goldGram: +goldGram.toFixed(4), goldValueTry, totalPaid, groupCount: groups.length, activeGroups,
     goldOrders: goldOrders.map((o) => ({ gram: o.gram, trackingNo: o.trackingNo, status: o.shippingStatus })) });
 });

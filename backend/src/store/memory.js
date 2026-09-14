@@ -13,6 +13,10 @@ export const memoryStore = {
   async createUser(u) { m.users.set(u.id, u); return u; },
   async getUser(id) { return m.users.get(id) || null; },
   async findUserByPhone(phone) { return [...m.users.values()].find((u) => u.phone === phone) || null; },
+  async findUserByUsername(username) {
+    const q = String(username || '').toLowerCase();
+    return [...m.users.values()].find((u) => (u.username || '').toLowerCase() === q) || null;
+  },
   async setUserCardToken(id, token) { const u = m.users.get(id); if (u) u.cardToken = token; },
   async updateUser(id, fields) { const u = m.users.get(id); if (!u) return null; Object.assign(u, fields); return u; },
 

@@ -1,6 +1,7 @@
 CREATE TABLE IF NOT EXISTS users (
   id           TEXT PRIMARY KEY,
   phone        TEXT UNIQUE NOT NULL,
+  username     TEXT UNIQUE,
   name         TEXT NOT NULL,
   tc_verified  BOOLEAN DEFAULT FALSE,
   iban         TEXT,
@@ -8,6 +9,10 @@ CREATE TABLE IF NOT EXISTS users (
   card_token   TEXT,
   created_at   TIMESTAMPTZ DEFAULT NOW()
 );
+-- Mevcut (eski) veritabanına kullanıcı adı sütununu ekle (yoksa)
+ALTER TABLE users ADD COLUMN IF NOT EXISTS username TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_users_username ON users (LOWER(username));
+
 CREATE TABLE IF NOT EXISTS groups (
   id TEXT PRIMARY KEY, name TEXT NOT NULL, owner_id TEXT REFERENCES users(id),
   member_count INT NOT NULL, unit TEXT NOT NULL, amount NUMERIC NOT NULL,

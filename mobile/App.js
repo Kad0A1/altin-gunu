@@ -10,6 +10,7 @@ import { colors } from './src/theme/theme';
 import { loadToken } from './src/api/client';
 
 import LoginScreen from './src/screens/LoginScreen';
+import RegisterScreen from './src/screens/RegisterScreen';
 import OtpScreen from './src/screens/OtpScreen';
 import GroupsScreen from './src/screens/GroupsScreen';
 import GoldRateScreen from './src/screens/GoldRateScreen';
@@ -86,6 +87,7 @@ export default function App() {
             contentStyle: { backgroundColor: colors.bg },
           }}>
           <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="Register" component={RegisterScreen} options={{ title: 'Kayıt Ol' }} />
           <Stack.Screen name="Otp" component={OtpScreen} options={{ title: 'Doğrulama' }} />
           <Stack.Screen name="Main" component={MainTabs} options={{ headerShown: false }} />
           <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profilim' }} />

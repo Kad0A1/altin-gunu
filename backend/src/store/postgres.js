@@ -1,8 +1,8 @@
 import crypto from 'node:crypto';
 import { query, initSchema } from '../db/pool.js';
 
-const toUser = (r) => r && ({ id: r.id, phone: r.phone, name: r.name, tcVerified: r.tc_verified,
-  iban: r.iban, address: r.address, cardToken: r.card_token, createdAt: r.created_at });
+const toUser = (r) => r && ({ id: r.id, phone: r.phone, username: r.username, name: r.name,
+  tcVerified: r.tc_verified, iban: r.iban, address: r.address, cardToken: r.card_token, createdAt: r.created_at });
 const toGroup = (r) => r && ({ id: r.id, name: r.name, ownerId: r.owner_id, memberCount: r.member_count,
   unit: r.unit, amount: Number(r.amount), period: r.period, startDate: r.start_date,
   orderMethod: r.order_method, inviteCode: r.invite_code, status: r.status, createdAt: r.created_at });
@@ -16,12 +16,16 @@ export const postgresStore = {
   async init() { await initSchema(); },
 
   async createUser(u) {
-    await query(`INSERT INTO users (id, phone, name, tc_verified, iban, address, card_token) VALUES ($1,$2,$3,$4,$5,$6,$7)`,
-      [u.id, u.phone, u.name, u.tcVerified || false, u.iban || null, u.address || null, u.cardToken || null]);
+    await query(`INSERT INTO users (id, phone, username, name, tc_verified, iban, address, card_token)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+      [u.id, u.phone, u.username || null, u.name, u.tcVerified || false, u.iban || null, u.address || null, u.cardToken || null]);
     return u;
   },
   async getUser(id) { const { rows } = await query('SELECT * FROM users WHERE id=$1', [id]); return toUser(rows[0]); },
   async findUserByPhone(phone) { const { rows } = await query('SELECT * FROM users WHERE phone=$1', [phone]); return toUser(rows[0]); },
+  async findUserByUsername(username) {
+    const { rows } = await query('SELECT * FROM users WHERE LOWER(username)=LOWER($1)', [username]); return toUser(rows[0]);
+  },
   async setUserCardToken(id, token) { await query('UPDATE users SET card_token=$1 WHERE id=$2', [token, id]); },
   async updateUser(id, fields) {
     const allowed = { name: 'name', iban: 'iban', address: 'address', tcVerified: 'tc_verified' };
