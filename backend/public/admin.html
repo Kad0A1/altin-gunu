@@ -32,7 +32,8 @@
   .tab{display:flex;gap:8px;margin-bottom:16px}
   .tab button{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
   .tab button.active{background:var(--gold);color:#1A1A22}
-  .hidden{display:none}
+  /* KRİTİK: !important ile her zaman gizler (modal-bg display:flex'i ezmesin diye) */
+  .hidden{display:none !important}
   .err{color:var(--danger);margin-top:8px}
   .logo{font-size:32px}
   a{color:var(--gold)}
@@ -124,8 +125,8 @@
 
 <script>
 let KEY = '';
-let USERS = [];          // kullanıcı listesi (index ile erişim)
-let editingPhone = '';   // düzenlenen kullanıcının MEVCUT telefonu
+let USERS = [];
+let editingPhone = '';
 const $ = (id) => document.getElementById(id);
 
 async function apiGet(path){
@@ -178,7 +179,6 @@ async function loadUsers(){
     USERS = d.users || [];
     $('usersEmpty').style.display = USERS.length ? 'none' : 'block';
     $('usersEmpty').textContent = USERS.length ? '' : 'Henüz kullanıcı yok.';
-    // Satırları index ile bağla — onclick'e veri gömülmez (kaçış sorunu olmaz)
     $('usersBody').innerHTML = USERS.map((u, i)=>`
       <tr>
         <td>${esc(u.name)}</td>
@@ -212,7 +212,7 @@ async function loadGroups(){
   }catch(e){ $('groupsEmpty').style.display='block'; $('groupsEmpty').textContent=e.message; }
 }
 
-// ── Düzenleme modalı (index ile — veriler diziden okunur) ──
+// ── Düzenleme modalı (index ile) ──
 function openEdit(i){
   const u = USERS[i];
   if(!u) return;
@@ -224,11 +224,6 @@ function openEdit(i){
   $('editModal').classList.remove('hidden');
 }
 function closeEdit(){ $('editModal').classList.add('hidden'); }
-
-// Telefon inputu: sadece rakam + 11 hane
-$('edPhone').addEventListener('input', (e)=>{
-  e.target.value = e.target.value.replace(/[^0-9]/g,'').slice(0,11);
-});
 
 async function saveEdit(){
   const name = $('edName').value.trim();
@@ -268,7 +263,10 @@ async function resetAll(){
 
 function esc(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
+// Telefon inputu: sadece rakam + 11 hane (DOM hazır olunca bağla)
 window.onload = () => {
+  const ph = $('edPhone');
+  if(ph){ ph.addEventListener('input', (e)=>{ e.target.value = e.target.value.replace(/[^0-9]/g,'').slice(0,11); }); }
   const saved = localStorage.getItem('adminKey');
   if(saved){ $('key').value = saved; login(); }
 };
