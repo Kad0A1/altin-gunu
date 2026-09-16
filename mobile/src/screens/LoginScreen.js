@@ -10,8 +10,15 @@ export default function LoginScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // Sadece rakam kabul et, en fazla 11 hane
+  function onPhoneChange(t) {
+    const digits = t.replace(/[^0-9]/g, '').slice(0, 11);
+    setPhone(digits);
+  }
+
   async function onLogin() {
-    if (!username.trim() || !phone.trim()) return setError('Kullanıcı adı ve telefon gerekli');
+    if (!username.trim()) return setError('Kullanıcı adı gerekli');
+    if (phone.length !== 11) return setError('Telefon numarası 11 haneli olmalıdır');
     setLoading(true); setError('');
     try {
       const res = await api.loginRequest(username.trim(), phone.trim());
@@ -30,10 +37,10 @@ export default function LoginScreen({ navigation }) {
         </Text>
       </View>
 
-      <Field label="Kullanıcı Adı" placeholder="kullanici_adi" autoCapitalize="none"
+      <Field label="Kullanıcı Adı" autoCapitalize="none"
         value={username} onChangeText={setUsername} />
-      <Field label="Telefon" placeholder="05XX XXX XX XX" keyboardType="phone-pad"
-        value={phone} onChangeText={setPhone} />
+      <Field label="Telefon" keyboardType="phone-pad" maxLength={11}
+        value={phone} onChangeText={onPhoneChange} />
       {error ? <Text style={styles.err}>{error}</Text> : null}
       <Button title="Giriş Yap" onPress={onLogin} loading={loading} />
 

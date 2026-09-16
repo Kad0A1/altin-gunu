@@ -8,7 +8,9 @@ const router = Router();
 // Kullanıcı adı kuralları: 3-20 karakter, harf/rakam/alt çizgi
 function normUsername(u) { return String(u || '').trim(); }
 function validUsername(u) { return /^[a-zA-Z0-9_]{3,20}$/.test(u); }
-function normPhone(p) { return String(p || '').replace(/\s+/g, ''); }
+// Telefon: sadece rakam, tam 11 hane zorunlu
+function normPhone(p) { return String(p || '').replace(/[^0-9]/g, ''); }
+function validPhone(p) { return /^[0-9]{11}$/.test(p); }
 
 function genCode() { return String(Math.floor(100000 + Math.random() * 900000)); }
 async function sendOtp(store, phone) {
@@ -29,7 +31,8 @@ router.post('/register-request', async (req, res) => {
   if (!name) return res.status(400).json({ error: 'Ad Soyad gerekli' });
   if (!validUsername(username))
     return res.status(400).json({ error: 'Kullanıcı adı 3-20 karakter olmalı (harf, rakam, _)' });
-  if (!phone) return res.status(400).json({ error: 'Telefon gerekli' });
+  if (!validPhone(phone))
+    return res.status(400).json({ error: 'Telefon numarası 11 haneli olmalıdır' });
 
   // Benzersizlik: telefon
   if (await store.findUserByPhone(phone))
@@ -49,6 +52,9 @@ router.post('/register-verify', async (req, res) => {
   const username = normUsername(req.body.username);
   const phone = normPhone(req.body.phone);
   const code = String(req.body.code || '').trim();
+
+  if (!validPhone(phone))
+    return res.status(400).json({ error: 'Telefon numarası 11 haneli olmalıdır' });
 
   const rec = await store.getOtp(phone);
   if (!rec || rec.code !== code || Date.now() > rec.expiresAt)
@@ -74,7 +80,9 @@ router.post('/login-request', async (req, res) => {
   const store = getStore();
   const username = normUsername(req.body.username);
   const phone = normPhone(req.body.phone);
-  if (!username || !phone) return res.status(400).json({ error: 'Kullanıcı adı ve telefon gerekli' });
+  if (!username) return res.status(400).json({ error: 'Kullanıcı adı gerekli' });
+  if (!validPhone(phone))
+    return res.status(400).json({ error: 'Telefon numarası 11 haneli olmalıdır' });
 
   const user = await store.findUserByPhone(phone);
   if (!user) return res.status(404).json({ error: 'Kayıt bulunamadı. Önce kayıt olun.' });
@@ -90,6 +98,9 @@ router.post('/login-verify', async (req, res) => {
   const store = getStore();
   const phone = normPhone(req.body.phone);
   const code = String(req.body.code || '').trim();
+
+  if (!validPhone(phone))
+    return res.status(400).json({ error: 'Telefon numarası 11 haneli olmalıdır' });
 
   const rec = await store.getOtp(phone);
   if (!rec || rec.code !== code || Date.now() > rec.expiresAt)

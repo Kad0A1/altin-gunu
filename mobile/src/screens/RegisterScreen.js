@@ -11,11 +11,17 @@ export default function RegisterScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // Sadece rakam kabul et, en fazla 11 hane
+  function onPhoneChange(t) {
+    const digits = t.replace(/[^0-9]/g, '').slice(0, 11);
+    setPhone(digits);
+  }
+
   function validate() {
     if (!name.trim()) return 'Ad Soyad gerekli';
     if (!/^[a-zA-Z0-9_]{3,20}$/.test(username.trim()))
       return 'Kullanıcı adı 3-20 karakter olmalı (harf, rakam, _)';
-    if (!phone.trim()) return 'Telefon gerekli';
+    if (phone.length !== 11) return 'Telefon numarası 11 haneli olmalıdır';
     return null;
   }
 
@@ -41,11 +47,11 @@ export default function RegisterScreen({ navigation }) {
           </Text>
         </View>
 
-        <Field label="Ad Soyad" placeholder="Adınız Soyadınız" value={name} onChangeText={setName} />
-        <Field label="Kullanıcı Adı" placeholder="benzersiz_kullanici_adi" autoCapitalize="none"
+        <Field label="Ad Soyad" value={name} onChangeText={setName} />
+        <Field label="Kullanıcı Adı" autoCapitalize="none"
           value={username} onChangeText={setUsername} />
-        <Field label="Telefon" placeholder="05XX XXX XX XX" keyboardType="phone-pad"
-          value={phone} onChangeText={setPhone} />
+        <Field label="Telefon" keyboardType="phone-pad" maxLength={11}
+          value={phone} onChangeText={onPhoneChange} />
         {error ? <Text style={styles.err}>{error}</Text> : null}
         <Button title="Kayıt Ol ve Doğrula" onPress={onRegister} loading={loading} />
 
